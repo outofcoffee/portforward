@@ -23,14 +23,15 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 import javax.annotation.CheckForNull;
 
 /**
  * Listens on the given port to accept connection and forward it to target.
- * 
+ *
  * @author Kenneth Xu
- * 
+ *
  */
 public class Listener implements Runnable, Closeable {
     private static Log log = LogFactory.getLog(Listener.class);
@@ -39,10 +40,11 @@ public class Listener implements Runnable, Closeable {
     @CheckForNull
     private Throwable exception;
     private final Cleaner cleaner = new Cleaner();
+    private boolean closing;
 
     /**
      * Gets the exception occurred if any.
-     * 
+     *
      * @return the exception if any error occurred
      */
     @CheckForNull
@@ -52,7 +54,7 @@ public class Listener implements Runnable, Closeable {
 
     /**
      * Constructs a new instance of Listener.
-     * 
+     *
      * @param from
      *            the address to listen for connections
      * @param to
@@ -85,10 +87,16 @@ public class Listener implements Runnable, Closeable {
                 log.trace("accepted client connection");
                 Socket target = connector.openSocket();
                 new Processor(source, target, cleaner).process();
+
             } catch (IOException e) {
                 String msg = "Failed to accept client connection on port " + from.getPort();
-                log.error(msg, e);
-                exception = e;
+                if (!closing) {
+                    log.error(msg, e);
+                    exception = e;
+
+                } else {
+                    log.trace(msg, e);
+                }
                 return;
             }
         }
@@ -101,10 +109,19 @@ public class Listener implements Runnable, Closeable {
     public void close() {
         if (!serverSocket.isClosed()) {
             try {
+                closing = true;
                 serverSocket.close();
+
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * @return the 'from' port.
+     */
+    public int getPort() {
+        return from.getPort();
     }
 }

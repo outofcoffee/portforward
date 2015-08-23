@@ -39,7 +39,7 @@ class Cleaner implements Runnable {
         while (true) {
             cleanup();
             try {
-                wait(CLEAN_INTERVAL);
+                Thread.sleep(CLEAN_INTERVAL);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             }
