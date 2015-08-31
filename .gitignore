@@ -10,5 +10,6 @@
 *.project
 *.settings
 target
+build
 *.iml
 portforward/.gradle/
